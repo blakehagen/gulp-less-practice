@@ -1,0 +1,30 @@
+{
+  "name": "gulp-less-practice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blakehagen/gulp-less-practice.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/blakehagen/gulp-less-practice/issues"
+  },
+  "homepage": "https://github.com/blakehagen/gulp-less-practice#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-if": "^2.0.0",
+    "gulp-jscs": "^3.0.2",
+    "gulp-jshint": "^2.0.0",
+    "gulp-print": "^2.0.1",
+    "gulp-util": "^3.0.7",
+    "jshint": "^2.9.1",
+    "jshint-stylish": "^2.1.0",
+    "yargs": "^4.6.0"
+  }
+}
