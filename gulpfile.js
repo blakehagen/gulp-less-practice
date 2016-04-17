@@ -4,8 +4,11 @@ var jscs   = require('gulp-jscs');
 var util   = require('gulp-util');
 var gprint = require('gulp-print');
 var gulpif = require('gulp-if');
-var args = require('yargs').argv;
+var less = require('gulp-less');
 var config = require('./gulp.config')();
+var autoprefixer = require('gulp-autoprefixer');
+var del = require('del');
+var args = require('yargs').argv;
 
 // DEFAULT GULP CHECK //
 gulp.task('default', function () {
@@ -23,7 +26,22 @@ gulp.task('check-js', function () {
     .pipe(jshint.reporter('fail'));
 });
 
-// REUSABLE LOG FUNCTION //
+// COMPILE CSS //
+gulp.task('styles', ['clean-styles'], function () {
+  log('Compiling LESS --> CSS...');
+  return gulp.src(config.less)
+    .pipe(less())
+    .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
+    .pipe(gulp.dest(config.temp));
+});
+
+// CLEAN TEMP CSS FOLDER //
+gulp.task('clean-styles', function () {
+  var files = config.temp + '**/*.css';
+  clean(files);
+});
+
+// LOG FUNCTION //
 function log(msg) {
   if (typeof (msg) === 'object') {
     for (var item in msg) {
@@ -36,3 +54,8 @@ function log(msg) {
   }
 }
 
+// FUNCTION TO CLEAN FILES //
+function clean(path) {
+  log('Cleaning: ' + util.colors.blue(path));
+  del(path);
+}
