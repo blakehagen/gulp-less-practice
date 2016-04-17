@@ -1,6 +1,10 @@
 module.exports = function () {
   var config = {
-    allJS: [ './*.js']
+    allJS: [
+      './server/**/*.js',
+      './public/**/*.js',
+      './*.js'
+    ]
   };
   return config;
 };

@@ -7,16 +7,14 @@ var gulpif = require('gulp-if');
 var args = require('yargs').argv;
 var config = require('./gulp.config')();
 
-
-
-
-
+// DEFAULT GULP CHECK //
 gulp.task('default', function () {
   console.log('It\'s go time for gulp!');
 });
 
-gulp.task('vet', function () {
-  log('Checking with jshint and jscs...');
+//  CHECK ALL JS CODE WITH JSHINT & JSCS //
+gulp.task('check-js', function () {
+  log('Checking JS files with jshint and jscs...');
   return gulp.src(config.allJS)
     .pipe(gulpif(args.verbose, gprint()))
     .pipe(jscs())
@@ -25,6 +23,7 @@ gulp.task('vet', function () {
     .pipe(jshint.reporter('fail'));
 });
 
+// REUSABLE LOG FUNCTION //
 function log(msg) {
   if (typeof (msg) === 'object') {
     for (var item in msg) {
