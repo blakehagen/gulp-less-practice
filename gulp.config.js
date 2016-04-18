@@ -1,7 +1,7 @@
 module.exports = function () {
   var public = './public/';
   var config = {
-    temp: './temp',
+    temp: './temp/',
     allJS: [
       './server/**/*.js',
       './public/**/*.js',

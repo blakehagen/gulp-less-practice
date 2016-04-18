@@ -1,14 +1,16 @@
-var gulp   = require('gulp');
-var jshint = require('gulp-jshint');
-var jscs   = require('gulp-jscs');
-var util   = require('gulp-util');
-var gprint = require('gulp-print');
-var gulpif = require('gulp-if');
-var less = require('gulp-less');
-var config = require('./gulp.config')();
+var gulp         = require('gulp');
+var jshint       = require('gulp-jshint');
+var jscs         = require('gulp-jscs');
+var util         = require('gulp-util');
+var gprint       = require('gulp-print');
+var gulpif       = require('gulp-if');
+var less         = require('gulp-less');
 var autoprefixer = require('gulp-autoprefixer');
-var del = require('del');
-var args = require('yargs').argv;
+var plumber     = require('gulp-plumber');
+var del          = require('del');
+var args         = require('yargs').argv;
+var config       = require('./gulp.config')();
+
 
 // DEFAULT GULP CHECK //
 gulp.task('default', function () {
@@ -30,6 +32,7 @@ gulp.task('check-js', function () {
 gulp.task('styles', ['clean-styles'], function () {
   log('Compiling LESS --> CSS...');
   return gulp.src(config.less)
+    .pipe(plumber())
     .pipe(less())
     .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
     .pipe(gulp.dest(config.temp));
@@ -40,6 +43,22 @@ gulp.task('clean-styles', function () {
   var files = config.temp + '**/*.css';
   clean(files);
 });
+
+gulp.task('less-watcher', function () {
+  gulp.watch([config.less], ['styles']);
+});
+
+// // // // // // // // // // //
+// // UTILITY FUNCTIONS // // //
+// // // // // // // // // // //
+
+// ERROR LOG //
+function errorLogger(error) {
+  log('*** ERROR START ***');
+  log(error);
+  log('*** ERROR END ***');
+  this.emit('end');
+}
 
 // LOG FUNCTION //
 function log(msg) {
