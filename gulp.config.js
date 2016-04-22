@@ -1,14 +1,18 @@
 module.exports = function () {
   var public    = './public/';
   var publicApp = public + 'app/';
+  var temp = './temp/';
+
+
   var config    = {
-    temp: './temp/',
+    temp: temp,
     allJS: [
       './server/**/*.js',
       './public/**/*.js',
       './*.js'
     ],
     public: public,
+    css: temp + 'styles.css',
     index: public + 'index.html',
     appJS: [
       // ANGULAR FIRST //

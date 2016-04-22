@@ -1,3 +1,5 @@
+'use strict';
+
 var gulp         = require('gulp');
 var jshint       = require('gulp-jshint');
 var jscs         = require('gulp-jscs');
@@ -8,10 +10,10 @@ var less         = require('gulp-less');
 var autoprefixer = require('gulp-autoprefixer');
 var plumber      = require('gulp-plumber');
 var inject       = require('gulp-inject');
+var gnodemon     = require('gulp-nodemon');
 var del          = require('del');
 var args         = require('yargs').argv;
 var config       = require('./gulp.config')();
-
 
 // DEFAULT GULP CHECK //
 gulp.task('default', function () {
@@ -21,12 +23,26 @@ gulp.task('default', function () {
 //  CHECK ALL JS CODE WITH JSHINT & JSCS //
 gulp.task('js-check', function () {
   log('Checking JS files with jshint and jscs...');
-  return gulp.src(config.allJS)
+  return gulp.src(config.appJS)
     .pipe(gulpif(args.verbose, gprint()))
     .pipe(jscs())
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish', {verbose: true}))
     .pipe(jshint.reporter('fail'));
+});
+
+// INJECT JS INTO INDEX.HTML //
+gulp.task('js-inject', function () {
+  log('Injecting JS files into index.html...');
+  return gulp.src(config.index)
+    .pipe(inject(gulp.src(config.appJS)))
+    .pipe(gulp.dest(config.public));
+});
+
+// CLEAN TEMP CSS FOLDER //
+gulp.task('clean-styles', function () {
+  var files = config.temp + '**/*.css';
+  clean(files);
 });
 
 // COMPILE CSS //
@@ -39,23 +55,17 @@ gulp.task('styles', ['clean-styles'], function () {
     .pipe(gulp.dest(config.temp));
 });
 
-// CLEAN TEMP CSS FOLDER //
-gulp.task('clean-styles', function () {
-  var files = config.temp + '**/*.css';
-  clean(files);
-});
-
 // WATCH LESS FILES FOR CHANGES //
 gulp.task('less-watcher', function () {
   log('Watching for style changes...');
   gulp.watch([config.less], ['styles']);
 });
 
-// INJECT JS INTO INDEX.HTML //
-gulp.task('js-inject', function () {
-  log('Injecting JS files into index.html...');
+// INJECT CSS INTO INDEX.HTML //
+gulp.task('css-inject', ['styles'], function () {
+  log('Injecting CSS into index.html...');
   return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.appJS)))
+    .pipe(inject(gulp.src(config.css)))
     .pipe(gulp.dest(config.public));
 });
 
