@@ -6,7 +6,8 @@ var gprint       = require('gulp-print');
 var gulpif       = require('gulp-if');
 var less         = require('gulp-less');
 var autoprefixer = require('gulp-autoprefixer');
-var plumber     = require('gulp-plumber');
+var plumber      = require('gulp-plumber');
+var inject       = require('gulp-inject');
 var del          = require('del');
 var args         = require('yargs').argv;
 var config       = require('./gulp.config')();
@@ -18,7 +19,7 @@ gulp.task('default', function () {
 });
 
 //  CHECK ALL JS CODE WITH JSHINT & JSCS //
-gulp.task('check-js', function () {
+gulp.task('js-check', function () {
   log('Checking JS files with jshint and jscs...');
   return gulp.src(config.allJS)
     .pipe(gulpif(args.verbose, gprint()))
@@ -44,9 +45,19 @@ gulp.task('clean-styles', function () {
   clean(files);
 });
 
+// WATCH LESS FILES FOR CHANGES //
 gulp.task('less-watcher', function () {
   gulp.watch([config.less], ['styles']);
 });
+
+// INJECT JS INTO INDEX.HTML //
+gulp.task('js-inject', function () {
+
+  return gulp.src(config.index)
+    .pipe(inject(gulp.src(config.appJS)))
+    .pipe(gulp.dest(config.public));
+});
+
 
 // // // // // // // // // // //
 // // UTILITY FUNCTIONS // // //
