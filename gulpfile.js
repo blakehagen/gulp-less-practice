@@ -15,7 +15,7 @@ var config       = require('./gulp.config')();
 
 // DEFAULT GULP CHECK //
 gulp.task('default', function () {
-  console.log('It\'s go time for gulp!');
+  log('Hi. I\'m Gulp. Let\'s build this...');
 });
 
 //  CHECK ALL JS CODE WITH JSHINT & JSCS //
@@ -47,12 +47,13 @@ gulp.task('clean-styles', function () {
 
 // WATCH LESS FILES FOR CHANGES //
 gulp.task('less-watcher', function () {
+  log('Watching for style changes...');
   gulp.watch([config.less], ['styles']);
 });
 
 // INJECT JS INTO INDEX.HTML //
 gulp.task('js-inject', function () {
-
+  log('Injecting JS files into index.html...');
   return gulp.src(config.index)
     .pipe(inject(gulp.src(config.appJS)))
     .pipe(gulp.dest(config.public));
