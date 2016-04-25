@@ -1,10 +1,11 @@
 module.exports = function () {
-  var public    = './public/';
-  var publicApp = public + 'app/';
-  var temp = './temp/';
+  var public     = './public/';
+  var publicApp  = public + 'app/';
+  var server     = './server/';
+  var nodeServer = './server/server.js';
+  var temp       = './temp/';
 
-
-  var config    = {
+  var config = {
     temp: temp,
     allJS: [
       './server/**/*.js',
@@ -25,6 +26,9 @@ module.exports = function () {
       publicApp + './*.js',
       publicApp + '**/*.js'
     ],
+    defaultPort: 4400,
+    nodeServer: nodeServer,
+    server: server,
     less: public + './styles/styles.less'
   };
   return config;

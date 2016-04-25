@@ -2,7 +2,7 @@
 
 // REQUIRES //
 const babel   = require('babel-core').transform('code');
-const express = require('./server/config/express.js');
+const express = require('./config/express.js');
 
 // RUN EXPRESS //
 const app = express();
@@ -13,7 +13,8 @@ app.get('/api/v1/test', (req, res) => {
 });
 
 // PORT //
-const port = process.env.PORT || 4400;
+const port        = process.env.PORT || 4400;
+// const environment = process.env.NODE_ENV;
 app.listen(port, () => {
   console.log('Check me out on port', port);
 });

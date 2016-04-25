@@ -13,7 +13,9 @@ var inject       = require('gulp-inject');
 var gnodemon     = require('gulp-nodemon');
 var del          = require('del');
 var args         = require('yargs').argv;
+// var browserSync  = require('browser-sync');
 var config       = require('./gulp.config')();
+// var port         = process.env.PORT || config.defaultPort;
 
 // DEFAULT GULP CHECK //
 gulp.task('default', function () {
@@ -69,10 +71,57 @@ gulp.task('css-inject', ['styles'], function () {
     .pipe(gulp.dest(config.public));
 });
 
+// SERVE-DEV //
+gulp.task('serve-dev', ['js-check', 'js-inject', 'css-inject'], function () {
+  var isDev       = true;
+  var nodeOptions = {
+    script: config.nodeServer,
+    delayTime: 1,
+    env: {
+      'NODE_ENV': isDev ? 'dev' : 'prod'
+    },
+    watch: ['./server']
+  }
+  return gnodemon(nodeOptions)
+    .on('restart', ['js-check'], function (ev) {
+      log('**** nodemon restarted');
+      log('files changed on restart:\n' + ev);
+    })
+    .on('start', function () {
+      log('**** nodemon started');
+      // startBrowserSync();
+    })
+    .on('crash', function () {
+      log('**** nodemon crashed');
+    })
+    .on('exit', function () {
+      log('**** nodemon exited');
+    });
+});
+
 
 // // // // // // // // // // //
 // // UTILITY FUNCTIONS // // //
 // // // // // // // // // // //
+
+// function startBrowserSync() {
+//   if (browserSync.active) {
+//     return;
+//   }
+//   log('Starting browserSync on port ' + port);
+//   var options = {
+//     // proxy: 'localhost:' + port,
+//     port: 3000,
+//     files: [config.public + '**/*.*'],
+//     injectChanges: true,
+//     logFileChanges: true,
+//     // logLevel: 'debug',
+//     // logPrefix: 'gulp-patterns',
+//     notify: true,
+//     reloadDelay: 1000
+//   };
+//   browserSync(options);
+// }
 
 // ERROR LOG //
 function errorLogger(error) {
