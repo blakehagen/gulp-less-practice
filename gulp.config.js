@@ -1,9 +1,10 @@
 module.exports = function () {
   var public     = './public/';
-  var publicApp  = public + 'app/';
+  var publicApp  =  public + 'app/';
   var server     = './server/';
-  var nodeServer = './server/server.js';
+  var nodeServer = server + 'server.js';
   var temp       = './temp/';
+
 
   var config = {
     temp: temp,
@@ -17,14 +18,13 @@ module.exports = function () {
     index: public + 'index.html',
     appJS: [
       // ANGULAR FIRST //
-      publicApp + 'vendor/angular/angular.min.js',
+       publicApp + 'vendor/angular/angular.min.js',
       // OTHER 3RD PARTY LIBRARIES //
       publicApp + 'vendor/**/*.js',
       // APP.JS //
-      publicApp + 'app.js',
+       publicApp + 'app.js',
       // OTHER JS //
-      publicApp + './*.js',
-      publicApp + '**/*.js'
+      publicApp + 'features/**/*.js'
     ],
     defaultPort: 4400,
     nodeServer: nodeServer,

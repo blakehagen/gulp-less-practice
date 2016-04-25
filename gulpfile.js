@@ -37,7 +37,7 @@ gulp.task('js-check', function () {
 gulp.task('js-inject', function () {
   log('Injecting JS files into index.html...');
   return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.appJS)))
+    .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
     .pipe(gulp.dest(config.public));
 });
 
