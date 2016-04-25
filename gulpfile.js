@@ -67,7 +67,7 @@ gulp.task('less-watcher', function () {
 gulp.task('css-inject', ['styles'], function () {
   log('Injecting CSS into index.html...');
   return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.css)))
+    .pipe(inject(gulp.src(config.css, {read: false}), {ignorePath: 'public'}))
     .pipe(gulp.dest(config.public));
 });
 

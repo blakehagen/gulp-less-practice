@@ -3,7 +3,7 @@ module.exports = function () {
   var publicApp  =  public + 'app/';
   var server     = './server/';
   var nodeServer = server + 'server.js';
-  var temp       = './temp/';
+  var temp       = public + 'temp/';
 
 
   var config = {

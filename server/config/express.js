@@ -16,6 +16,6 @@ module.exports = () => {
     resave: false,
     saveUninitialized: true
   }));
-  app.use(express.static(__dirname + '/public'));
+  app.use(express.static('public'));
   return app;
 };
