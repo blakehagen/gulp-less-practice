@@ -15,7 +15,10 @@ var gnodemon             = require('gulp-nodemon');
 var imagemin             = require('gulp-imagemin');
 var angularTemplateCache = require('gulp-angular-templatecache');
 var minifyHtml           = require('gulp-minify-html');
+var minifyCss            = require('gulp-minify-css');
 var gconcat              = require('gulp-concat');
+var uglify               = require('gulp-uglify');
+var strip                = require('gulp-strip-debug');
 var del                  = require('del');
 var args                 = require('yargs').argv;
 var browserSync          = require('browser-sync');
@@ -80,17 +83,41 @@ gulp.task('clean-images', function () {
 
 // CLEAN TEMP CSS FOLDER //
 gulp.task('clean-styles', function () {
-  clean(config.temp + '**/*.css');
+  clean(config.cssDestination);
 });
 
-// COMPILE CSS //
-gulp.task('styles', ['clean-styles'], function () {
-  log('Compiling LESS --> CSS...');
-  return gulp.src(config.less)
+// ADD PREFIXES TO CSS FILES & MOVE TO TEMP //
+gulp.task('autoprefixCss', function () {
+  log('Adding prefixes to app CSS files...');
+  gulp.src(config.appCSS)
+    .pipe(gconcat('cssPrefixes.css'))
+    .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
+    .pipe(gulp.dest(config.cssDestination));
+});
+
+// COMPILE VENDOR CSS //
+gulp.task('vendorStyles', function () {
+  log('Compiling VENDOR LESS --> CSS...');
+  return gulp.src(config.less[0])
     .pipe(plumber())
     .pipe(less())
     .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
-    .pipe(gulp.dest(config.temp));
+    .pipe(gulp.dest(config.cssDestination + '/vendor'));
+});
+
+// COMPILE APP CSS //
+gulp.task('appStyles', function () {
+  log('Compiling APP LESS --> CSS...');
+  return gulp.src(config.less[1])
+    .pipe(plumber())
+    .pipe(less())
+    .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
+    .pipe(gulp.dest(config.cssDestination));
+});
+
+// COMPILE CSS //
+gulp.task('styles', ['clean-styles','vendorStyles', 'appStyles', 'autoprefixCss'], function () {
+  log('Compiling --> --> --> CSS...');
 });
 
 // WATCH LESS FILES FOR CHANGES //
@@ -107,7 +134,7 @@ gulp.task('css-inject', ['styles'], function () {
     .pipe(gulp.dest(config.public));
 });
 
-// TEMPLATE CACHE //
+// TEMPLATE CACHE & MINIFY HTML //
 gulp.task('templateCache', ['clean-code'], function () {
   log('Creating Angular $templateCache...');
   return gulp.src(config.htmlTemplates)
@@ -116,10 +143,30 @@ gulp.task('templateCache', ['clean-code'], function () {
       config.templateCache.file,
       config.templateCache.options
     ))
-    .pipe(gulp.dest(config.temp));
+    .pipe(gulp.dest(config.temp + 'templates'));
 });
 
-gulp.task('optimize', ['css-inject', 'js-inject', 'templateCache'], function () {
+// CONCAT, STRIP & MINIFY JS  --> PROD //
+gulp.task('optimizeJs', function () {
+  log('Concat, strip, and minify JS...');
+  gulp.src(config.appJS)
+    .pipe(gconcat('script.js'))
+    .pipe(strip())
+    .pipe(uglify())
+    .pipe(gulp.dest(config.buildProduction + 'js'));
+});
+
+// CONCAT & MINIFY CSS  --> PROD //
+gulp.task('optimizeCss', ['styles'], function () {
+  log('Concat and minify CSS...');
+  gulp.src(config.css)
+    .pipe(gconcat('stylesheet.css'))
+    .pipe(minifyCss())
+    .pipe(gulp.dest(config.buildProduction + 'styles'));
+});
+
+// OPTIMIZE PRODUCTION BUILD //
+gulp.task('optimize', ['css-inject', 'js-inject', 'templateCache', 'optimizeJs', 'optimizeCss'], function () {
   log('Optimizing production build...');
   var templateCache = config.temp + config.templateCache.file;
   return gulp.src(config.index)

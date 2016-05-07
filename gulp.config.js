@@ -4,12 +4,17 @@ module.exports = function () {
   var server     = './server/';
   var nodeServer = server + 'server.js';
   var temp       = public + 'temp/';
+  var css        = temp + 'styles/';
 
   var config = {
     allJS: [
       './server/**/*.js',
       './public/**/*.js',
       './*.js'
+    ],
+    appCSS: [
+      public + 'styles/vendor/**/*.css',
+      public + 'styles/**/*.css'
     ],
     appJS: [
       // ANGULAR FIRST //
@@ -22,12 +27,19 @@ module.exports = function () {
       publicApp + 'features/**/*.js'
     ],
     buildProduction: './production/',
-    css: temp + 'styles.css',
+    css: [
+      css + 'vendor/**/*.css',
+      css + '*.css'
+    ],
+    cssDestination: css,
+    cssVendor: public + 'styles/vendor/**/*.*',
     defaultPort: 4400,
     htmlTemplates: publicApp + '**/*.html',
     images: public + 'assets/*.*',
     index: public + 'index.html',
-    less: public + './styles/**/*.less',
+    less: [
+      public + 'styles/vendor/**/*.less',
+      public + 'styles/**/*.less'],
     nodeServer: nodeServer,
     public: public,
     server: server,
