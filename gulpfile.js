@@ -1,25 +1,32 @@
 'use strict';
 
-var gulp         = require('gulp');
-var jshint       = require('gulp-jshint');
-var jscs         = require('gulp-jscs');
-var util         = require('gulp-util');
-var gprint       = require('gulp-print');
-var gulpif       = require('gulp-if');
-var less         = require('gulp-less');
-var autoprefixer = require('gulp-autoprefixer');
-var plumber      = require('gulp-plumber');
-var inject       = require('gulp-inject');
-var gnodemon     = require('gulp-nodemon');
-var del          = require('del');
-var args         = require('yargs').argv;
-var browserSync  = require('browser-sync');
-var config       = require('./gulp.config')();
-var port         = process.env.PORT || config.defaultPort;
+var gulp                 = require('gulp');
+var taskList             = require('gulp-task-listing');
+var jshint               = require('gulp-jshint');
+var jscs                 = require('gulp-jscs');
+var util                 = require('gulp-util');
+var gprint               = require('gulp-print');
+var gulpif               = require('gulp-if');
+var less                 = require('gulp-less');
+var autoprefixer         = require('gulp-autoprefixer');
+var plumber              = require('gulp-plumber');
+var inject               = require('gulp-inject');
+var gnodemon             = require('gulp-nodemon');
+var imagemin             = require('gulp-imagemin');
+var angularTemplateCache = require('gulp-angular-templatecache');
+var minifyHtml           = require('gulp-minify-html');
+var gconcat              = require('gulp-concat');
+var del                  = require('del');
+var args                 = require('yargs').argv;
+var browserSync          = require('browser-sync');
+var config               = require('./gulp.config')();
+var port                 = process.env.PORT || config.defaultPort;
 
-// DEFAULT GULP CHECK //
+// DEFAULT GULP CHECK  & LIST GULP TASKS //
 gulp.task('default', function () {
-  log('Hi. I\'m Gulp. Let\'s build this...');
+  log('Hi. I\'m Gulp. Let\'s do this...');
+  log('Showing available Gulp tasks...');
+  taskList();
 });
 
 //  CHECK ALL JS CODE WITH JSHINT & JSCS //
@@ -41,10 +48,39 @@ gulp.task('js-inject', function () {
     .pipe(gulp.dest(config.public));
 });
 
+// COPY IMAGES //
+gulp.task('images', ['clean-images'], function () {
+  log('Copy and compress images...');
+  return gulp.src(config.images)
+    .pipe(imagemin({verbose: true}))
+    .pipe(gulp.dest(config.buildProduction + 'images'));
+});
+
+// CLEAN //
+gulp.task('clean', function () {
+  var delConfig = [].concat(config.buildProduction, config.temp);
+  log('Cleaning: ' + util.colors.blue(delConfig));
+  del(delConfig);
+});
+
+// CLEAN CODE //
+gulp.task('clean-code', function () {
+  var files = [].concat(
+    config.temp + '**/*.js',
+    config.buildProduction + '**/*.html',
+    config.buildProduction + 'js/**/*.js'
+  );
+  clean(files);
+});
+
+// CLEAN PROD IMAGES //
+gulp.task('clean-images', function () {
+  clean(config.buildProduction + 'images/**/*.*');
+});
+
 // CLEAN TEMP CSS FOLDER //
 gulp.task('clean-styles', function () {
-  var files = config.temp + '**/*.css';
-  clean(files);
+  clean(config.temp + '**/*.css');
 });
 
 // COMPILE CSS //
@@ -69,6 +105,27 @@ gulp.task('css-inject', ['styles'], function () {
   return gulp.src(config.index)
     .pipe(inject(gulp.src(config.css, {read: false}), {ignorePath: 'public'}))
     .pipe(gulp.dest(config.public));
+});
+
+// TEMPLATE CACHE //
+gulp.task('templateCache', ['clean-code'], function () {
+  log('Creating Angular $templateCache...');
+  return gulp.src(config.htmlTemplates)
+    .pipe(minifyHtml({empty: true}))
+    .pipe(angularTemplateCache(
+      config.templateCache.file,
+      config.templateCache.options
+    ))
+    .pipe(gulp.dest(config.temp));
+});
+
+gulp.task('optimize', ['css-inject', 'js-inject', 'templateCache'], function () {
+  log('Optimizing production build...');
+  var templateCache = config.temp + config.templateCache.file;
+  return gulp.src(config.index)
+    .pipe(plumber())
+    .pipe(inject(gulp.src(templateCache, {read: false}), {starttag: '<!-- inject:templates:js -->'}))
+    .pipe(gulp.dest(config.buildProduction));
 });
 
 // SERVE-DEV //
@@ -115,8 +172,6 @@ function startBrowserSync() {
     files: [config.public + '**/*.*'],
     injectChanges: true,
     logFileChanges: true,
-    // logLevel: 'debug',
-    // logPrefix: 'gulp-patterns',
     notify: true,
     reloadDelay: 1000
   };

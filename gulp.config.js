@@ -1,35 +1,45 @@
 module.exports = function () {
   var public     = './public/';
-  var publicApp  =  public + 'app/';
+  var publicApp  = public + 'app/';
   var server     = './server/';
   var nodeServer = server + 'server.js';
   var temp       = public + 'temp/';
 
-
   var config = {
-    temp: temp,
     allJS: [
       './server/**/*.js',
       './public/**/*.js',
       './*.js'
     ],
-    public: public,
-    css: temp + 'styles.css',
-    index: public + 'index.html',
     appJS: [
       // ANGULAR FIRST //
-       publicApp + 'vendor/angular/angular.min.js',
+      publicApp + 'vendor/angular/angular.min.js',
       // OTHER 3RD PARTY LIBRARIES //
       publicApp + 'vendor/**/*.js',
       // APP.JS //
-       publicApp + 'app.js',
+      publicApp + 'app.js',
       // OTHER JS //
       publicApp + 'features/**/*.js'
     ],
+    buildProduction: './production/',
+    css: temp + 'styles.css',
     defaultPort: 4400,
+    htmlTemplates: publicApp + '**/*.html',
+    images: public + 'assets/*.*',
+    index: public + 'index.html',
+    less: public + './styles/**/*.less',
     nodeServer: nodeServer,
+    public: public,
     server: server,
-    less: public + './styles/styles.less'
+    temp: temp,
+    templateCache: {
+      file: 'templates.js',
+      options: {
+        module: 'gulpPractice',
+        standAlone: false,
+        root: 'app/'
+      }
+    }
   };
   return config;
 };
