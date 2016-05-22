@@ -17,14 +17,16 @@ module.exports = function () {
       public + 'styles/**/*.css'
     ],
     appJS: [
-      // ANGULAR FIRST //
-      publicApp + 'vendor/angular/angular.min.js',
-      // OTHER 3RD PARTY LIBRARIES //
-      publicApp + 'vendor/**/*.js',
       // APP.JS //
       publicApp + 'app.js',
       // OTHER JS //
       publicApp + 'features/**/*.js'
+    ],
+    appJSVendor: [
+      // ANGULAR FIRST //
+      publicApp + 'vendor/angular/angular.min.js',
+      // OTHER 3RD PARTY LIBRARIES //
+      publicApp + 'vendor/**/*.js'
     ],
     buildProduction: './production/',
     css: [
@@ -34,6 +36,7 @@ module.exports = function () {
     cssDestination: css,
     cssVendor: public + 'styles/vendor/**/*.*',
     defaultPort: 4400,
+    html: public + '**/*.html',
     htmlTemplates: publicApp + '**/*.html',
     images: public + 'assets/*.*',
     index: public + 'index.html',

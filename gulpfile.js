@@ -19,6 +19,8 @@ var minifyCss            = require('gulp-minify-css');
 var gconcat              = require('gulp-concat');
 var uglify               = require('gulp-uglify');
 var strip                = require('gulp-strip-debug');
+var useref               = require('gulp-useref');
+var ngAnnotate           = require('gulp-ng-annotate');
 var del                  = require('del');
 var args                 = require('yargs').argv;
 var browserSync          = require('browser-sync');
@@ -43,12 +45,25 @@ gulp.task('js-check', function () {
     .pipe(jshint.reporter('fail'));
 });
 
-// INJECT JS INTO INDEX.HTML //
-gulp.task('js-inject', function () {
-  log('Injecting JS files into index.html...');
+// INJECT VENDOR JS INTO INDEX.HTML //
+gulp.task('js-vendorInject', function () {
+  log('Injecting VENDOR JS files into index.html...');
   return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
+    .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {starttag: '<!-- inject:vendor:js -->'}, {ignorePath: 'public'}))
     .pipe(gulp.dest(config.public));
+});
+
+// INJECT APP JS INTO INDEX.HTML //
+gulp.task('js-appInject', function () {
+  log('Injecting APP JS files into index.html...');
+  return gulp.src(config.index)
+    .pipe(inject(gulp.src(config.appJS, {read: false}), {starttag: '<!-- inject:app:js -->'}, {ignorePath: 'public'}))
+    .pipe(gulp.dest(config.public));
+});
+
+// INJECT ALL JS INTO INDEX.HTML //
+gulp.task('js-inject', ['js-vendorInject', 'js-appInject'], function () {
+  log('Injecting JS...');
 });
 
 // COPY IMAGES //
@@ -116,7 +131,7 @@ gulp.task('appStyles', function () {
 });
 
 // COMPILE CSS //
-gulp.task('styles', ['clean-styles','vendorStyles', 'appStyles', 'autoprefixCss'], function () {
+gulp.task('styles', ['clean-styles', 'vendorStyles', 'appStyles', 'autoprefixCss'], function () {
   log('Compiling --> --> --> CSS...');
 });
 
@@ -146,14 +161,30 @@ gulp.task('templateCache', ['clean-code'], function () {
     .pipe(gulp.dest(config.temp + 'templates'));
 });
 
-// CONCAT, STRIP & MINIFY JS  --> PROD //
-gulp.task('optimizeJs', function () {
-  log('Concat, strip, and minify JS...');
-  gulp.src(config.appJS)
-    .pipe(gconcat('script.js'))
+// CONCAT, STRIP & MINIFY VENDOR JS  --> PROD //
+gulp.task('optimizeVendorJs', function () {
+  log('Concat, strip, and minify VENDOR JS...');
+  gulp.src(config.appJSVendor)
+    .pipe(gconcat('lib.js'))
     .pipe(strip())
     .pipe(uglify())
     .pipe(gulp.dest(config.buildProduction + 'js'));
+});
+
+// NG-ANNOTATE, CONCAT, STRIP & MINIFY APP JS  --> PROD //
+gulp.task('optimizeAppJs', ['templateCache'], function () {
+  log('Ng-Annotate, Concat, strip, and minify APP JS...');
+  gulp.src(config.appJS)
+    .pipe(ngAnnotate())
+    .pipe(gconcat('app.js'))
+    .pipe(strip())
+    .pipe(uglify())
+    .pipe(gulp.dest(config.buildProduction + 'js'));
+});
+
+// OPTIMIZE VENDOR AND APP JS FOR PRODUCTION //
+gulp.task('optimizeJs', ['optimizeAppJs', 'optimizeVendorJs'], function () {
+  log('OPTIMIZING ALL JS...');
 });
 
 // CONCAT & MINIFY CSS  --> PROD //
@@ -166,41 +197,24 @@ gulp.task('optimizeCss', ['styles'], function () {
 });
 
 // OPTIMIZE PRODUCTION BUILD //
-gulp.task('optimize', ['css-inject', 'js-inject', 'templateCache', 'optimizeJs', 'optimizeCss'], function () {
+gulp.task('optimize', ['css-inject', 'js-inject', 'images', 'optimizeJs', 'optimizeCss'], function () {
   log('Optimizing production build...');
   var templateCache = config.temp + config.templateCache.file;
   return gulp.src(config.index)
     .pipe(plumber())
     .pipe(inject(gulp.src(templateCache, {read: false}), {starttag: '<!-- inject:templates:js -->'}))
+    .pipe(useref())
     .pipe(gulp.dest(config.buildProduction));
 });
 
-// SERVE-DEV //
+// SERVE PRODUCTION BUILD //
+gulp.task('serve-prod', ['optimize'], function () {
+  serve(false); // isDev
+});
+
+// SERVE DEV //
 gulp.task('serve-dev', ['js-check', 'js-inject', 'css-inject'], function () {
-  var isDev       = true;
-  var nodeOptions = {
-    script: config.nodeServer,
-    delayTime: 1,
-    env: {
-      'NODE_ENV': isDev ? 'dev' : 'prod'
-    },
-    watch: ['./server']
-  }
-  return gnodemon(nodeOptions)
-    .on('restart', ['js-check'], function (ev) {
-      log('**** nodemon restarted');
-      log('files changed on restart:\n' + ev);
-    })
-    .on('start', function () {
-      log('**** nodemon started');
-      startBrowserSync();
-    })
-    .on('crash', function () {
-      log('**** nodemon crashed');
-    })
-    .on('exit', function () {
-      log('**** nodemon exited');
-    });
+  serve(true); // isDev
 });
 
 
@@ -208,15 +222,56 @@ gulp.task('serve-dev', ['js-check', 'js-inject', 'css-inject'], function () {
 // // UTILITY FUNCTIONS // // //
 // // // // // // // // // // //
 
-function startBrowserSync() {
-  if (browserSync.active) {
+function serve(isDev) {
+  var nodeOptions = {
+    script: config.nodeServer,
+    delayTime: 1,
+    env: {
+      'NODE_ENV': isDev ? 'dev' : 'prod'
+    },
+    watch: ['./server']
+  };
+  return gnodemon(nodeOptions)
+    .on('restart', ['js-check'], function (ev) {
+      log('**** nodemon restarted');
+      log('files changed on restart:\n' + ev);
+    })
+    .on('start', function () {
+      log('**** nodemon started');
+      startBrowserSync(isDev);
+    })
+    .on('crash', function () {
+      log('**** nodemon crashed');
+    })
+    .on('exit', function () {
+      log('**** nodemon exited');
+    });
+}
+
+
+function startBrowserSync(isDev) {
+  if (args.nosync || browserSync.active) {
     return;
   }
   log('Starting browserSync on port ' + port);
+
+  if (isDev) {
+    gulp.watch([config.less], ['styles'])
+      .on('change', function (event) {
+        changeEvent(event);
+      });
+  } else {
+    gulp.watch([config.less, config.appJS, config.html], ['optimize', browserSyncReload])
+      .on('change', function (event) {
+        changeEvent(event);
+      });
+  }
+
+
   var options = {
     proxy: 'localhost:' + port,
     port: 3000,
-    files: [config.public + '**/*.*'],
+    files: isDev ? [config.public + '**/*.*'] : [],
     injectChanges: true,
     logFileChanges: true,
     notify: true,
