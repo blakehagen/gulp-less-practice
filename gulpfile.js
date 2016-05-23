@@ -46,25 +46,12 @@ gulp.task('js-check', function () {
 });
 
 // INJECT VENDOR JS INTO INDEX.HTML //
-gulp.task('js-vendorInject', function () {
-  log('Injecting VENDOR JS files into index.html...');
+gulp.task('js-inject', function () {
+  log('Injecting JS files into index.html...');
   return gulp.src(config.index)
     .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {ignorePath: 'public', starttag: '<!-- inject:vendor:js -->'}))
     .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
     .pipe(gulp.dest(config.public));
-});
-
-// // INJECT APP JS INTO INDEX.HTML //
-// gulp.task('js-appInject', function () {
-//   log('Injecting APP JS files into index.html...');
-//   return gulp.src(config.index)
-//     .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
-//     .pipe(gulp.dest(config.public));
-// });
-
-// INJECT ALL JS INTO INDEX.HTML //
-gulp.task('js-inject', ['js-vendorInject'], function () {
-  log('Injecting JS...');
 });
 
 // COPY IMAGES //
