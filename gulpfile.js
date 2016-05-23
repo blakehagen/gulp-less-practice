@@ -49,20 +49,21 @@ gulp.task('js-check', function () {
 gulp.task('js-vendorInject', function () {
   log('Injecting VENDOR JS files into index.html...');
   return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {starttag: '<!-- inject:vendor:js -->'}, {ignorePath: 'public'}))
+    .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {ignorePath: 'public', starttag: '<!-- inject:vendor:js -->'}))
+    .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
     .pipe(gulp.dest(config.public));
 });
 
-// INJECT APP JS INTO INDEX.HTML //
-gulp.task('js-appInject', function () {
-  log('Injecting APP JS files into index.html...');
-  return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.appJS, {read: false}), {starttag: '<!-- inject:app:js -->'}, {ignorePath: 'public'}))
-    .pipe(gulp.dest(config.public));
-});
+// // INJECT APP JS INTO INDEX.HTML //
+// gulp.task('js-appInject', function () {
+//   log('Injecting APP JS files into index.html...');
+//   return gulp.src(config.index)
+//     .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
+//     .pipe(gulp.dest(config.public));
+// });
 
 // INJECT ALL JS INTO INDEX.HTML //
-gulp.task('js-inject', ['js-vendorInject', 'js-appInject'], function () {
+gulp.task('js-inject', ['js-vendorInject'], function () {
   log('Injecting JS...');
 });
 
@@ -172,7 +173,7 @@ gulp.task('optimizeVendorJs', function () {
 });
 
 // NG-ANNOTATE, CONCAT, STRIP & MINIFY APP JS  --> PROD //
-gulp.task('optimizeAppJs', ['templateCache'], function () {
+gulp.task('optimizeAppJs', function () {
   log('Ng-Annotate, Concat, strip, and minify APP JS...');
   gulp.src(config.appJS)
     .pipe(ngAnnotate())
@@ -197,9 +198,10 @@ gulp.task('optimizeCss', ['styles'], function () {
 });
 
 // OPTIMIZE PRODUCTION BUILD //
-gulp.task('optimize', ['css-inject', 'js-inject', 'images', 'optimizeJs', 'optimizeCss'], function () {
+gulp.task('optimize', ['css-inject', 'js-inject', 'images', 'templateCache', 'optimizeJs', 'optimizeCss'], function () {
   log('Optimizing production build...');
-  var templateCache = config.temp + config.templateCache.file;
+  var templateCache = config.temp + 'templates/' + config.templateCache.file;
+  console.log('templateCache: ', templateCache);
   return gulp.src(config.index)
     .pipe(plumber())
     .pipe(inject(gulp.src(templateCache, {read: false}), {starttag: '<!-- inject:templates:js -->'}))
@@ -213,7 +215,7 @@ gulp.task('serve-prod', ['optimize'], function () {
 });
 
 // SERVE DEV //
-gulp.task('serve-dev', ['js-check', 'js-inject', 'css-inject'], function () {
+gulp.task('serve-dev', ['css-inject', 'js-check', 'js-inject'], function () {
   serve(true); // isDev
 });
 

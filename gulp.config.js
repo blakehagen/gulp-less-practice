@@ -51,8 +51,7 @@ module.exports = function () {
       file: 'templates.js',
       options: {
         module: 'gulpPractice',
-        standAlone: false,
-        root: 'app/'
+        standAlone: false
       }
     }
   };
