@@ -3,5 +3,5 @@
 .awesome {
   display: flex;
   flex-flow: row;
-  border: 1px solid red;
+  border: 1px solid deeppink;
 }

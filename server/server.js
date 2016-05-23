@@ -13,8 +13,7 @@ app.get('/api/v1/test', (req, res) => {
 });
 
 // PORT //
-const port        = process.env.PORT || 4400;
-const environment = process.env.NODE_ENV;
+const port = process.env.PORT || 4400;
 app.listen(port, () => {
   console.log('Check me out on port', port);
 });

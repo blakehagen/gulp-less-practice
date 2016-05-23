@@ -1,6 +1,7 @@
 'use strict';
 
 var gulp                 = require('gulp');
+var babel                = require("gulp-babel");
 var taskList             = require('gulp-task-listing');
 var jshint               = require('gulp-jshint');
 var jscs                 = require('gulp-jscs');
@@ -45,11 +46,14 @@ gulp.task('js-check', function () {
     .pipe(jshint.reporter('fail'));
 });
 
-// INJECT VENDOR JS INTO INDEX.HTML //
+// INJECT JS INTO INDEX.HTML //
 gulp.task('js-inject', function () {
   log('Injecting JS files into index.html...');
   return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {ignorePath: 'public', starttag: '<!-- inject:vendor:js -->'}))
+    .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {
+      ignorePath: 'public',
+      starttag: '<!-- inject:vendor:js -->'
+    }))
     .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
     .pipe(gulp.dest(config.public));
 });
@@ -93,25 +97,15 @@ gulp.task('clean-styles', function () {
 gulp.task('autoprefixCss', function () {
   log('Adding prefixes to app CSS files...');
   gulp.src(config.appCSS)
-    .pipe(gconcat('cssPrefixes.css'))
+    .pipe(gconcat('stylesWithPrefixes.css'))
     .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
     .pipe(gulp.dest(config.cssDestination));
 });
 
-// COMPILE VENDOR CSS //
-gulp.task('vendorStyles', function () {
-  log('Compiling VENDOR LESS --> CSS...');
-  return gulp.src(config.less[0])
-    .pipe(plumber())
-    .pipe(less())
-    .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
-    .pipe(gulp.dest(config.cssDestination + '/vendor'));
-});
-
-// COMPILE APP CSS //
-gulp.task('appStyles', function () {
-  log('Compiling APP LESS --> CSS...');
-  return gulp.src(config.less[1])
+// COMPILE CSS //
+gulp.task('compileStyles', function () {
+  log('Compiling LESS --> CSS...');
+  return gulp.src(config.less)
     .pipe(plumber())
     .pipe(less())
     .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
@@ -119,7 +113,7 @@ gulp.task('appStyles', function () {
 });
 
 // COMPILE CSS //
-gulp.task('styles', ['clean-styles', 'vendorStyles', 'appStyles', 'autoprefixCss'], function () {
+gulp.task('styles', ['clean-styles','autoprefixCss', 'compileStyles' ], function () {
   log('Compiling --> --> --> CSS...');
 });
 
@@ -212,18 +206,23 @@ gulp.task('serve-dev', ['css-inject', 'js-check', 'js-inject'], function () {
 // // // // // // // // // // //
 
 function serve(isDev) {
+  console.log('isDev: ', isDev);
   var nodeOptions = {
     script: config.nodeServer,
     delayTime: 1,
     env: {
-      'NODE_ENV': isDev ? 'dev' : 'prod'
+      'NODE_ENV': isDev ? 'dev' : 'production'
     },
-    watch: ['./server']
+    watch: [config.server]
   };
   return gnodemon(nodeOptions)
     .on('restart', ['js-check'], function (ev) {
       log('**** nodemon restarted');
       log('files changed on restart:\n' + ev);
+      setTimeout(function () {
+        browserSync.notify('reloading...');
+        browserSync.reload({stream: false});
+      })
     })
     .on('start', function () {
       log('**** nodemon started');
@@ -237,6 +236,10 @@ function serve(isDev) {
     });
 }
 
+function changeEvent(event) {
+  var srcPattern = new RegExp('/.*(?=/' + config.source + ')/');
+  log('File ' + event.path.replace(srcPattern, '') + ' ' + event.type);
+}
 
 function startBrowserSync(isDev) {
   if (args.nosync || browserSync.active) {
@@ -250,17 +253,16 @@ function startBrowserSync(isDev) {
         changeEvent(event);
       });
   } else {
-    gulp.watch([config.less, config.appJS, config.html], ['optimize', browserSyncReload])
+    gulp.watch([config.less, config.appJS, config.html], ['optimize', browserSync.reload])
       .on('change', function (event) {
         changeEvent(event);
       });
   }
 
-
   var options = {
     proxy: 'localhost:' + port,
     port: 3000,
-    files: isDev ? [config.public + '**/*.*'] : [],
+    files: isDev ? [config.public + '**/*.*', '!' + config.less, config.temp + '**/*.css'] : [],
     injectChanges: true,
     logFileChanges: true,
     notify: true,
