@@ -28,7 +28,7 @@ module.exports = function () {
       // OTHER 3RD PARTY LIBRARIES //
       publicApp + 'vendor/**/*.js'
     ],
-    buildProduction: './production/',
+    build: './build/',
     css: [
       css + 'vendor/**/*.css',
       css + '*.css'

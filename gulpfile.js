@@ -46,52 +46,57 @@ gulp.task('js-check', function () {
     .pipe(jshint.reporter('fail'));
 });
 
-// INJECT JS INTO INDEX.HTML //
-gulp.task('js-inject', function () {
-  log('Injecting JS files into index.html...');
-  return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {
-      ignorePath: 'public',
-      starttag: '<!-- inject:vendor:js -->'
-    }))
-    .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
-    .pipe(gulp.dest(config.public));
+// // INJECT JS INTO INDEX.HTML //
+// gulp.task('js-inject', function () {
+//   log('Injecting JS files into index.html...');
+//   return gulp.src(config.index)
+//     .pipe(inject(gulp.src(config.appJSVendor, {read: false}), {
+//       ignorePath: 'public',
+//       starttag: '<!-- inject:vendor:js -->'
+//     }))
+//     .pipe(inject(gulp.src(config.appJS, {read: false}), {ignorePath: 'public'}))
+//     .pipe(gulp.dest(config.public));
+// });
+
+// // COPY IMAGES //
+// gulp.task('images', ['clean-images'], function () {
+//   log('Copy and compress images...');
+//   return gulp.src(config.images)
+//     .pipe(imagemin({verbose: true}))
+//     .pipe(gulp.dest(config.build + 'images'));
+// });
+
+// // CLEAN //
+// gulp.task('clean', function () {
+//   var delConfig = [].concat(config.build, config.temp);
+//   log('Cleaning: ' + util.colors.blue(delConfig));
+//   del(delConfig);
+// });
+
+// // CLEAN CODE //
+// gulp.task('clean-code', function () {
+//   var files = [].concat(
+//     config.temp + '**/*.js',
+//     config.build + '**/*.html',
+//     config.build + 'js/**/*.js'
+//   );
+//   clean(files);
+// });
+
+// CLEAN BUILD FOLDER //
+gulp.task('clean-build', function () {
+  clean(config.build);
 });
 
-// COPY IMAGES //
-gulp.task('images', ['clean-images'], function () {
-  log('Copy and compress images...');
-  return gulp.src(config.images)
-    .pipe(imagemin({verbose: true}))
-    .pipe(gulp.dest(config.buildProduction + 'images'));
-});
+// // CLEAN PROD IMAGES //
+// gulp.task('clean-images', function () {
+//   clean(config.build + 'images/**/*.*');
+// });
 
-// CLEAN //
-gulp.task('clean', function () {
-  var delConfig = [].concat(config.buildProduction, config.temp);
-  log('Cleaning: ' + util.colors.blue(delConfig));
-  del(delConfig);
-});
-
-// CLEAN CODE //
-gulp.task('clean-code', function () {
-  var files = [].concat(
-    config.temp + '**/*.js',
-    config.buildProduction + '**/*.html',
-    config.buildProduction + 'js/**/*.js'
-  );
-  clean(files);
-});
-
-// CLEAN PROD IMAGES //
-gulp.task('clean-images', function () {
-  clean(config.buildProduction + 'images/**/*.*');
-});
-
-// CLEAN TEMP CSS FOLDER //
-gulp.task('clean-styles', function () {
-  clean(config.cssDestination);
-});
+// // CLEAN TEMP CSS FOLDER //
+// gulp.task('clean-styles', function () {
+//   clean(config.cssDestination);
+// });
 
 // ADD PREFIXES TO CSS FILES & MOVE TO TEMP //
 gulp.task('autoprefixCss', function () {
@@ -102,20 +107,20 @@ gulp.task('autoprefixCss', function () {
     .pipe(gulp.dest(config.cssDestination));
 });
 
-// COMPILE CSS //
-gulp.task('compileStyles', function () {
+// COMPILE LESS -> CSS --> BUILD //
+gulp.task('compile-less', function () {
   log('Compiling LESS --> CSS...');
   return gulp.src(config.less)
     .pipe(plumber())
     .pipe(less())
     .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
-    .pipe(gulp.dest(config.cssDestination));
+    .pipe(gulp.dest(config.build + 'css'));
 });
 
 // COMPILE CSS //
-gulp.task('styles', ['clean-styles','autoprefixCss', 'compileStyles' ], function () {
-  log('Compiling --> --> --> CSS...');
-});
+// gulp.task('styles', ['clean-styles','autoprefixCss', 'compileStyles' ], function () {
+//   log('Compiling --> --> --> CSS...');
+// });
 
 // WATCH LESS FILES FOR CHANGES //
 gulp.task('less-watcher', function () {
@@ -131,8 +136,8 @@ gulp.task('css-inject', ['styles'], function () {
     .pipe(gulp.dest(config.public));
 });
 
-// TEMPLATE CACHE & MINIFY HTML //
-gulp.task('templateCache', ['clean-code'], function () {
+// TEMPLATE CACHE & MINIFY HTML --> BUILD //
+gulp.task('templateCache', function () {
   log('Creating Angular $templateCache...');
   return gulp.src(config.htmlTemplates)
     .pipe(minifyHtml({empty: true}))
@@ -140,20 +145,20 @@ gulp.task('templateCache', ['clean-code'], function () {
       config.templateCache.file,
       config.templateCache.options
     ))
-    .pipe(gulp.dest(config.temp + 'templates'));
+    .pipe(gulp.dest(config.build + 'templates'));
 });
 
-// CONCAT, STRIP & MINIFY VENDOR JS  --> PROD //
+// CONCAT, STRIP & MINIFY VENDOR JS  --> BUILD //
 gulp.task('optimizeVendorJs', function () {
   log('Concat, strip, and minify VENDOR JS...');
   gulp.src(config.appJSVendor)
     .pipe(gconcat('lib.js'))
     .pipe(strip())
     .pipe(uglify())
-    .pipe(gulp.dest(config.buildProduction + 'js'));
+    .pipe(gulp.dest(config.build + 'js'));
 });
 
-// NG-ANNOTATE, CONCAT, STRIP & MINIFY APP JS  --> PROD //
+// NG-ANNOTATE, CONCAT, STRIP & MINIFY APP JS  --> BUILD //
 gulp.task('optimizeAppJs', function () {
   log('Ng-Annotate, Concat, strip, and minify APP JS...');
   gulp.src(config.appJS)
@@ -161,21 +166,21 @@ gulp.task('optimizeAppJs', function () {
     .pipe(gconcat('app.js'))
     .pipe(strip())
     .pipe(uglify())
-    .pipe(gulp.dest(config.buildProduction + 'js'));
+    .pipe(gulp.dest(config.build + 'js'));
 });
 
-// OPTIMIZE VENDOR AND APP JS FOR PRODUCTION //
+// OPTIMIZE VENDOR AND APP JS --> BUILD //
 gulp.task('optimizeJs', ['optimizeAppJs', 'optimizeVendorJs'], function () {
   log('OPTIMIZING ALL JS...');
 });
 
-// CONCAT & MINIFY CSS  --> PROD //
+// CONCAT & MINIFY CSS  --> BUILD //
 gulp.task('optimizeCss', ['styles'], function () {
   log('Concat and minify CSS...');
   gulp.src(config.css)
     .pipe(gconcat('stylesheet.css'))
     .pipe(minifyCss())
-    .pipe(gulp.dest(config.buildProduction + 'styles'));
+    .pipe(gulp.dest(config.build + 'styles'));
 });
 
 // OPTIMIZE PRODUCTION BUILD //
@@ -187,7 +192,7 @@ gulp.task('optimize', ['css-inject', 'js-inject', 'images', 'templateCache', 'op
     .pipe(plumber())
     .pipe(inject(gulp.src(templateCache, {read: false}), {starttag: '<!-- inject:templates:js -->'}))
     .pipe(useref())
-    .pipe(gulp.dest(config.buildProduction));
+    .pipe(gulp.dest(config.build));
 });
 
 // SERVE PRODUCTION BUILD //
@@ -216,7 +221,7 @@ function serve(isDev) {
     watch: [config.server]
   };
   return gnodemon(nodeOptions)
-    .on('restart', ['js-check'], function (ev) {
+    .on('restart', ['js-check', 'styles'], function (ev) {
       log('**** nodemon restarted');
       log('files changed on restart:\n' + ev);
       setTimeout(function () {

@@ -1,0 +1,7 @@
+/* THIS IS THE MAIN CSS FILE */
+
+.main-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
