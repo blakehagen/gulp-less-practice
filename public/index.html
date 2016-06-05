@@ -3,31 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>Gulp Practice</title>
-  <!-- build:css styles/stylesheet.css -->
-  <!-- inject:css -->
-  <link rel="stylesheet" href="/temp/styles/styles.css">
+  <!-- inject:lib:css -->
   <!-- endinject -->
-  <!-- endbuild -->
+  <!-- inject:stylesheet:css -->
+  <!-- endinject -->
+  <!-- inject:app:css -->
+  <!-- endinject -->
 </head>
-
 <body>
-
 <ui-view></ui-view>
-
-<!-- build:js js/lib.js -->
-<!-- inject:vendor:js -->
-<script src="/app/vendor/angular/angular.min.js"></script>
-<script src="/app/vendor/ui-router/angular-ui-router.min.js"></script>
+<!-- inject:lib:js -->
 <!-- endinject -->
-<!-- endbuild -->
-<!-- build:js js/app.js -->
-<!-- inject:js -->
-<script src="/app/app.js"></script>
-<script src="/app/features/login/loginCtrl.js"></script>
-<script src="/app/features/login/loginService.js"></script>
+<!-- inject:app:js -->
 <!-- endinject -->
 <!-- inject:templates:js -->
 <!-- endinject -->
-<!-- endbuild -->
 </body>
 </html>

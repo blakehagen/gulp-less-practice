@@ -24,6 +24,7 @@ var useref               = require('gulp-useref');
 var ngAnnotate           = require('gulp-ng-annotate');
 var del                  = require('del');
 var args                 = require('yargs').argv;
+var addStream            = require('add-stream');
 var browserSync          = require('browser-sync');
 var config               = require('./gulp.config')();
 var port                 = process.env.PORT || config.defaultPort;
@@ -98,55 +99,56 @@ gulp.task('clean-build', function () {
 //   clean(config.cssDestination);
 // });
 
-// ADD PREFIXES TO CSS FILES & MOVE TO TEMP //
-gulp.task('autoprefixCss', function () {
-  log('Adding prefixes to app CSS files...');
-  gulp.src(config.appCSS)
-    .pipe(gconcat('stylesWithPrefixes.css'))
-    .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
-    .pipe(gulp.dest(config.cssDestination));
-});
-
-// COMPILE LESS -> CSS --> BUILD //
-gulp.task('compile-less', function () {
-  log('Compiling LESS --> CSS...');
-  return gulp.src(config.less)
-    .pipe(plumber())
-    .pipe(less())
-    .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
-    .pipe(gulp.dest(config.build + 'css'));
-});
+// // ADD PREFIXES TO CSS FILES & MOVE TO TEMP //
+// gulp.task('autoprefixCss', function () {
+//   log('Adding prefixes to app CSS files...');
+//   gulp.src(config.appCSS)
+//     .pipe(gconcat('stylesWithPrefixes.css'))
+//     .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
+//     .pipe(gulp.dest(config.cssDestination));
+// });
 
 // COMPILE CSS //
 // gulp.task('styles', ['clean-styles','autoprefixCss', 'compileStyles' ], function () {
 //   log('Compiling --> --> --> CSS...');
 // });
 
-// WATCH LESS FILES FOR CHANGES //
-gulp.task('less-watcher', function () {
-  log('Watching for style changes...');
-  gulp.watch([config.less], ['styles']);
-});
+// // WATCH LESS FILES FOR CHANGES //
+// gulp.task('less-watcher', function () {
+//   log('Watching for style changes...');
+//   gulp.watch([config.less], ['styles']);
+// });
 
-// INJECT CSS INTO INDEX.HTML //
-gulp.task('css-inject', ['styles'], function () {
-  log('Injecting CSS into index.html...');
-  return gulp.src(config.index)
-    .pipe(inject(gulp.src(config.css, {read: false}), {ignorePath: 'public'}))
-    .pipe(gulp.dest(config.public));
-});
+// // INJECT CSS INTO INDEX.HTML //
+// gulp.task('css-inject', ['styles'], function () {
+//   log('Injecting CSS into index.html...');
+//   return gulp.src(config.index)
+//     .pipe(inject(gulp.src(config.css, {read: false}), {ignorePath: 'public'}))
+//     .pipe(gulp.dest(config.public));
+// });
 
 // TEMPLATE CACHE & MINIFY HTML --> BUILD //
-gulp.task('templateCache', function () {
-  log('Creating Angular $templateCache...');
+
+function prepareTemplates() {
   return gulp.src(config.htmlTemplates)
     .pipe(minifyHtml({empty: true}))
     .pipe(angularTemplateCache(
       config.templateCache.file,
       config.templateCache.options
     ))
-    .pipe(gulp.dest(config.build + 'templates'));
-});
+    .pipe(angularTemplateCache());
+}
+
+// gulp.task('templateCache', function () {
+//   log('Creating Angular $templateCache...');
+//   return gulp.src(config.htmlTemplates)
+//     .pipe(minifyHtml({empty: true}))
+//     .pipe(angularTemplateCache(
+//       config.templateCache.file,
+//       config.templateCache.options
+//     ))
+//     .pipe(gulp.dest(config.build + 'templates'));
+// });
 
 // CONCAT, STRIP & MINIFY VENDOR JS  --> BUILD //
 gulp.task('optimizeVendorJs', function () {
@@ -164,6 +166,8 @@ gulp.task('optimizeAppJs', function () {
   gulp.src(config.appJS)
     .pipe(ngAnnotate())
     .pipe(gconcat('app.js'))
+    .pipe(addStream.obj(prepareTemplates()))
+    .pipe(gconcat('app.js'))
     .pipe(strip())
     .pipe(uglify())
     .pipe(gulp.dest(config.build + 'js'));
@@ -174,8 +178,29 @@ gulp.task('optimizeJs', ['optimizeAppJs', 'optimizeVendorJs'], function () {
   log('OPTIMIZING ALL JS...');
 });
 
-// CONCAT & MINIFY CSS  --> BUILD //
-gulp.task('optimizeCss', ['styles'], function () {
+// COMPILE LESS --> CSS, CONCAT & MINIFY --> BUILD //
+gulp.task('compile-less', function () {
+  log('Compiling LESS --> CSS...');
+  return gulp.src(config.less)
+    .pipe(plumber())
+    .pipe(less())
+    .pipe(gconcat('app.css'))
+    .pipe(minifyCss())
+    .pipe(autoprefixer({browsers: ['last 2 version', '> 5%']}))
+    .pipe(gulp.dest(config.build + 'styles'));
+});
+
+// CONCAT & MINIFY VENDOR CSS  --> BUILD //
+gulp.task('optimize-vendor-css', function () {
+  log('Concat and minify CSS...');
+  gulp.src(config.cssVendor)
+    .pipe(gconcat('lib.css'))
+    .pipe(minifyCss())
+    .pipe(gulp.dest(config.build + 'styles'));
+});
+
+// CONCAT & MINIFY OTHER CSS  --> BUILD //
+gulp.task('optimize-app-css', [], function () {
   log('Concat and minify CSS...');
   gulp.src(config.css)
     .pipe(gconcat('stylesheet.css'))
@@ -183,106 +208,126 @@ gulp.task('optimizeCss', ['styles'], function () {
     .pipe(gulp.dest(config.build + 'styles'));
 });
 
-// OPTIMIZE PRODUCTION BUILD //
-gulp.task('optimize', ['css-inject', 'js-inject', 'images', 'templateCache', 'optimizeJs', 'optimizeCss'], function () {
-  log('Optimizing production build...');
-  var templateCache = config.temp + 'templates/' + config.templateCache.file;
-  console.log('templateCache: ', templateCache);
+// INJECT FILES TO BUILD INDEX //
+gulp.task('inject', function () {
+  log('Injecting assets into build index...');
+  // var templateCache = config.build + 'templates/' + config.templateCache.file;
+  var jsLib         = config.build + 'js/lib.js';
+  var jsApp         = config.build + 'js/app.js';
+  var cssLib        = config.build + 'styles/lib.css';
+  var cssApp        = config.build + 'styles/app.css';
+  var cssStylesheet = config.build + 'styles/stylesheet.css';
+
   return gulp.src(config.index)
     .pipe(plumber())
-    .pipe(inject(gulp.src(templateCache, {read: false}), {starttag: '<!-- inject:templates:js -->'}))
-    .pipe(useref())
+    // .pipe(inject(gulp.src(templateCache, {read: false}), {
+    //   starttag: '<!-- inject:templates:js -->',
+    //   ignorePath: 'build'
+    // }))
+    .pipe(inject(gulp.src(jsLib, {read: false}), {starttag: '<!-- inject:lib:js -->', ignorePath: 'build'}))
+    .pipe(inject(gulp.src(jsApp, {read: false}), {starttag: '<!-- inject:app:js -->', ignorePath: 'build'}))
+    .pipe(inject(gulp.src(cssLib, {read: false}), {starttag: '  <!-- inject:lib:css -->', ignorePath: 'build'}))
+    .pipe(inject(gulp.src(cssApp, {read: false}), {starttag: '<!-- inject:app:css -->', ignorePath: 'build'}))
+    .pipe(inject(gulp.src(cssStylesheet, {read: false}), {
+      starttag: '<!-- inject:stylesheet:css -->',
+      ignorePath: 'build'
+    }))
     .pipe(gulp.dest(config.build));
 });
 
-// SERVE PRODUCTION BUILD //
-gulp.task('serve-prod', ['optimize'], function () {
-  serve(false); // isDev
+// OPTIMIZE BUILD //
+gulp.task('build', ['clean-build', 'optimizeJs', 'optimize-vendor-css', 'compile-less', 'optimize-app-css', 'inject'], function () {
+  log('Building the awesomeness...');
 });
 
-// SERVE DEV //
-gulp.task('serve-dev', ['css-inject', 'js-check', 'js-inject'], function () {
-  serve(true); // isDev
-});
+// // SERVE PRODUCTION BUILD //
+// gulp.task('serve-prod', ['optimize'], function () {
+//   serve(false); // isDev
+// });
+
+// // SERVE DEV //
+// gulp.task('serve-dev', ['css-inject', 'js-check', 'js-inject'], function () {
+//   serve(true); // isDev
+// });
 
 
 // // // // // // // // // // //
 // // UTILITY FUNCTIONS // // //
 // // // // // // // // // // //
 
-function serve(isDev) {
-  console.log('isDev: ', isDev);
-  var nodeOptions = {
-    script: config.nodeServer,
-    delayTime: 1,
-    env: {
-      'NODE_ENV': isDev ? 'dev' : 'production'
-    },
-    watch: [config.server]
-  };
-  return gnodemon(nodeOptions)
-    .on('restart', ['js-check', 'styles'], function (ev) {
-      log('**** nodemon restarted');
-      log('files changed on restart:\n' + ev);
-      setTimeout(function () {
-        browserSync.notify('reloading...');
-        browserSync.reload({stream: false});
-      })
-    })
-    .on('start', function () {
-      log('**** nodemon started');
-      startBrowserSync(isDev);
-    })
-    .on('crash', function () {
-      log('**** nodemon crashed');
-    })
-    .on('exit', function () {
-      log('**** nodemon exited');
-    });
-}
+// function serve(isDev) {
+//   console.log('isDev: ', isDev);
+//   var nodeOptions = {
+//     script: config.nodeServer,
+//     delayTime: 1,
+//     env: {
+//       'NODE_ENV': isDev ? 'dev' : 'production'
+//     },
+//     watch: [config.server]
+//   };
+//   return gnodemon(nodeOptions)
+//     .on('restart', ['js-check', 'styles'], function (ev) {
+//       log('**** nodemon restarted');
+//       log('files changed on restart:\n' + ev);
+//       setTimeout(function () {
+//         browserSync.notify('reloading...');
+//         browserSync.reload({stream: false});
+//       })
+//     })
+//     .on('start', function () {
+//       log('**** nodemon started');
+//       startBrowserSync(isDev);
+//     })
+//     .on('crash', function () {
+//       log('**** nodemon crashed');
+//     })
+//     .on('exit', function () {
+//       log('**** nodemon exited');
+//     });
+// }
 
-function changeEvent(event) {
-  var srcPattern = new RegExp('/.*(?=/' + config.source + ')/');
-  log('File ' + event.path.replace(srcPattern, '') + ' ' + event.type);
-}
+// function changeEvent(event) {
+//   var srcPattern = new RegExp('/.*(?=/' + config.source + ')/');
+//   log('File ' + event.path.replace(srcPattern, '') + ' ' + event.type);
+// }
 
-function startBrowserSync(isDev) {
-  if (args.nosync || browserSync.active) {
-    return;
-  }
-  log('Starting browserSync on port ' + port);
+// function startBrowserSync(isDev) {
+//   if (args.nosync || browserSync.active) {
+//     return;
+//   }
+//   log('Starting browserSync on port ' + port);
+//
+//   if (isDev) {
+//     gulp.watch([config.less], ['styles'])
+//       .on('change', function (event) {
+//         changeEvent(event);
+//       });
+//   } else {
+//     gulp.watch([config.less, config.appJS, config.html], ['optimize', browserSync.reload])
+//       .on('change', function (event) {
+//         changeEvent(event);
+//       });
+//   }
+//
+//   var options = {
+//     proxy: 'localhost:' + port,
+//     port: 3000,
+//     files: isDev ? [config.public + '**/*.*', '!' + config.less, config.temp + '**/*.css'] : [],
+//     injectChanges: true,
+//     logFileChanges: true,
+//     notify: true,
+//     reloadDelay: 1000
+//   };
+//   browserSync(options);
+// }
 
-  if (isDev) {
-    gulp.watch([config.less], ['styles'])
-      .on('change', function (event) {
-        changeEvent(event);
-      });
-  } else {
-    gulp.watch([config.less, config.appJS, config.html], ['optimize', browserSync.reload])
-      .on('change', function (event) {
-        changeEvent(event);
-      });
-  }
-
-  var options = {
-    proxy: 'localhost:' + port,
-    port: 3000,
-    files: isDev ? [config.public + '**/*.*', '!' + config.less, config.temp + '**/*.css'] : [],
-    injectChanges: true,
-    logFileChanges: true,
-    notify: true,
-    reloadDelay: 1000
-  };
-  browserSync(options);
-}
-
-// ERROR LOG //
-function errorLogger(error) {
-  log('*** ERROR START ***');
-  log(error);
-  log('*** ERROR END ***');
-  this.emit('end');
-}
+// // ERROR LOG //
+// function errorLogger(error) {
+//   log('*** ERROR START ***');
+//   log(error);
+//   log('*** ERROR END ***');
+//   this.emit('end');
+// }
 
 // LOG FUNCTION //
 function log(msg) {

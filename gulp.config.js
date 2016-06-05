@@ -4,7 +4,6 @@ module.exports = function () {
   var server     = './server/';
   var nodeServer = server + 'server.js';
   var temp       = public + 'temp/';
-  var css        = temp + 'styles/';
 
   var config = {
     allJS: [
@@ -29,12 +28,8 @@ module.exports = function () {
       publicApp + 'vendor/**/*.js'
     ],
     build: './build/',
-    css: [
-      css + 'vendor/**/*.css',
-      css + '*.css'
-    ],
-    cssDestination: css,
-    cssVendor: public + 'styles/vendor/**/*.*',
+    css: public + 'styles/css/*.css',
+    cssVendor: public + 'styles/vendor/**/*.css',
     defaultPort: 4400,
     html: public + '**/*.html',
     htmlTemplates: publicApp + '**/*.html',
@@ -50,8 +45,9 @@ module.exports = function () {
     templateCache: {
       file: 'templates.js',
       options: {
-        module: 'gulpPractice',
-        standAlone: false
+        // module: 'gulpPractice',
+        standAlone: false,
+        root: 'app/'
       }
     }
   };
