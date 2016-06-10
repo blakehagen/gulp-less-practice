@@ -129,26 +129,26 @@ gulp.task('clean-build', function () {
 
 // TEMPLATE CACHE & MINIFY HTML --> BUILD //
 
-function prepareTemplates() {
-  return gulp.src(config.htmlTemplates)
-    .pipe(minifyHtml({empty: true}))
-    .pipe(angularTemplateCache(
-      config.templateCache.file,
-      config.templateCache.options
-    ))
-    .pipe(angularTemplateCache());
-}
-
-// gulp.task('templateCache', function () {
-//   log('Creating Angular $templateCache...');
+// function prepareTemplates() {
 //   return gulp.src(config.htmlTemplates)
 //     .pipe(minifyHtml({empty: true}))
 //     .pipe(angularTemplateCache(
 //       config.templateCache.file,
 //       config.templateCache.options
 //     ))
-//     .pipe(gulp.dest(config.build + 'templates'));
-// });
+//     .pipe(angularTemplateCache());
+// }
+
+gulp.task('templateCache', function () {
+  log('Creating Angular $templateCache...');
+  return gulp.src(config.htmlTemplates)
+    .pipe(minifyHtml({empty: true}))
+    .pipe(angularTemplateCache(
+      config.templateCache.file,
+      config.templateCache.options
+    ))
+    .pipe(gulp.dest(config.build + 'templates'));
+});
 
 // CONCAT, STRIP & MINIFY VENDOR JS  --> BUILD //
 gulp.task('optimizeVendorJs', function () {
@@ -166,15 +166,13 @@ gulp.task('optimizeAppJs', function () {
   gulp.src(config.appJS)
     .pipe(ngAnnotate())
     .pipe(gconcat('app.js'))
-    .pipe(addStream.obj(prepareTemplates()))
-    .pipe(gconcat('app.js'))
     .pipe(strip())
     .pipe(uglify())
     .pipe(gulp.dest(config.build + 'js'));
 });
 
 // OPTIMIZE VENDOR AND APP JS --> BUILD //
-gulp.task('optimizeJs', ['optimizeAppJs', 'optimizeVendorJs'], function () {
+gulp.task('optimizeJs', ['templateCache', 'optimizeAppJs', 'optimizeVendorJs'], function () {
   log('OPTIMIZING ALL JS...');
 });
 
@@ -192,7 +190,7 @@ gulp.task('compile-less', function () {
 
 // CONCAT & MINIFY VENDOR CSS  --> BUILD //
 gulp.task('optimize-vendor-css', function () {
-  log('Concat and minify CSS...');
+  log('Concat and minify VENDOR CSS...');
   gulp.src(config.cssVendor)
     .pipe(gconcat('lib.css'))
     .pipe(minifyCss())
@@ -201,17 +199,22 @@ gulp.task('optimize-vendor-css', function () {
 
 // CONCAT & MINIFY OTHER CSS  --> BUILD //
 gulp.task('optimize-app-css', [], function () {
-  log('Concat and minify CSS...');
+  log('Concat and minify APP CSS...');
   gulp.src(config.css)
     .pipe(gconcat('stylesheet.css'))
     .pipe(minifyCss())
     .pipe(gulp.dest(config.build + 'styles'));
 });
 
+// OPTIMIZE ALL STYLES --> BUILD //
+gulp.task('optimize-styles', ['compile-less', 'optimize-vendor-css', 'optimize-app-css'], function () {
+  log('OPTIMIZING ALL STYLES...');
+});
+
 // INJECT FILES TO BUILD INDEX //
-gulp.task('inject', function () {
+gulp.task('inject', ['optimizeJs', 'optimize-styles'], function () {
   log('Injecting assets into build index...');
-  // var templateCache = config.build + 'templates/' + config.templateCache.file;
+  var templateCache = config.build + 'templates/' + config.templateCache.file;
   var jsLib         = config.build + 'js/lib.js';
   var jsApp         = config.build + 'js/app.js';
   var cssLib        = config.build + 'styles/lib.css';
@@ -220,23 +223,20 @@ gulp.task('inject', function () {
 
   return gulp.src(config.index)
     .pipe(plumber())
-    // .pipe(inject(gulp.src(templateCache, {read: false}), {
-    //   starttag: '<!-- inject:templates:js -->',
-    //   ignorePath: 'build'
-    // }))
+    .pipe(inject(gulp.src(templateCache, {read: false}), {
+      starttag: '<!-- inject:templates:js -->',
+      ignorePath: 'build'
+    }))
     .pipe(inject(gulp.src(jsLib, {read: false}), {starttag: '<!-- inject:lib:js -->', ignorePath: 'build'}))
     .pipe(inject(gulp.src(jsApp, {read: false}), {starttag: '<!-- inject:app:js -->', ignorePath: 'build'}))
     .pipe(inject(gulp.src(cssLib, {read: false}), {starttag: '  <!-- inject:lib:css -->', ignorePath: 'build'}))
     .pipe(inject(gulp.src(cssApp, {read: false}), {starttag: '<!-- inject:app:css -->', ignorePath: 'build'}))
-    .pipe(inject(gulp.src(cssStylesheet, {read: false}), {
-      starttag: '<!-- inject:stylesheet:css -->',
-      ignorePath: 'build'
-    }))
+    .pipe(inject(gulp.src(cssStylesheet, {read: false}), {starttag: '<!-- inject:stylesheet:css -->', ignorePath: 'build'}))
     .pipe(gulp.dest(config.build));
 });
 
 // OPTIMIZE BUILD //
-gulp.task('build', ['clean-build', 'optimizeJs', 'optimize-vendor-css', 'compile-less', 'optimize-app-css', 'inject'], function () {
+gulp.task('build', ['clean-build', 'inject'], function () {
   log('Building the awesomeness...');
 });
 

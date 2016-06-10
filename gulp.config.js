@@ -45,9 +45,9 @@ module.exports = function () {
     templateCache: {
       file: 'templates.js',
       options: {
-        // module: 'gulpPractice',
+        module: 'gulpPractice',
         standAlone: false,
-        root: 'app/'
+        root: './'
       }
     }
   };
