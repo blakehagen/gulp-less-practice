@@ -7,6 +7,7 @@ const express = require('./config/express.js');
 // RUN EXPRESS //
 const app = express();
 
+console.log('hello world!');
 // API TEST ROUTE //
 app.get('/api/v1/test', (req, res) => {
   res.status(200).send('Light \'em up! We good to go!');

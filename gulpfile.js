@@ -264,7 +264,7 @@ function serve() {
     watch: [config.server]
   };
   return gnodemon(nodeOptions)
-    .on('restart', ['build'], function (ev) {
+    .on('restart', ['inject'], function (ev) {
       log('**** nodemon restarted ****');
       log('files changed on restart:\n' + ev);
       setTimeout(function () {
